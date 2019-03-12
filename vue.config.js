@@ -1,8 +1,5 @@
 const path = require('path')
 module.exports = {
-    publicPath: './',
-    assetsDir: './asset',
-    outputDir: 'blg',
     // 修改默认的入口
     pages: {
         index: {
