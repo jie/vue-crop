@@ -163,6 +163,7 @@
                 if (pointList.length > 0) {
                     pointList.forEach(el=>{
                         // 没一端的 颜色和  出细  也要记录
+                        const scale = this.scale / el[0].scale
                         ctx.beginPath()
                         el.forEach((element,i)=>{
                             if (i === 0) {
@@ -170,13 +171,13 @@
                                 ctx.strokeStyle = "#f60"
                                 ctx.lineCap = 'round'
                                 // 要相对于图片的位置 才是对的  不能相对于 画布
-                                // drawPoint.x = drawPoint.x - image.x
-                                // drawPoint.y = drawPoint.y - image.y
+                            //     drawPoint.x = drawPoint.x - image.x
+                            //     drawPoint.y = drawPoint.y - image.y
                             //    ctx.moveTo((image.x + element.x) * this.scale, (image.y + element.y) * this.scale)
-                                ctx.moveTo((image.x + element.x), (image.y + element.y))
+                                ctx.moveTo((image.x + element.x * scale), (image.y + element.y * scale))
                             }
                             // ctx.lineTo((image.x + element.x) * this.scale, (image.y + element.y) * this.scale)
-                            ctx.lineTo((image.x + element.x), (image.y + element.y))
+                            ctx.lineTo((image.x + element.x * scale), (image.y + element.y * scale))
                         })
                         ctx.stroke()
                     })
@@ -534,8 +535,7 @@
                 if (this.drawAction && this.pointLine.length > 0) {
                     this.drawPoint.x = this.drawPoint.x - this.image.x
                     this.drawPoint.y = this.drawPoint.y - this.image.y
-                    // drawPoint.x = drawPoint.x - image.x
-                    // drawPoint.y = drawPoint.y - image.y
+                    this.drawPoint.scale = this.scale
                     this.pointLine.push(this.drawPoint)
                     this.pointList.push(this.pointLine)
                     this.pointLine = []
@@ -600,6 +600,7 @@
                     // 图片  坐上角 为00
                     drawPoint.x = drawPoint.x - image.x
                     drawPoint.y = drawPoint.y - image.y
+                    drawPoint.scale = this.scale
                     this.pointLine.push(drawPoint)
                     // this.pointLine.push(drawPoint)
                     this.drawPoint = current
