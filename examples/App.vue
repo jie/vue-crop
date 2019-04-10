@@ -1,5 +1,6 @@
 <template>
   <div id="app">
+   顶部
   <p class="watermark">输入水印文字：
       <input type="text" placeholder="可以输入水印" v-model="textWatermark" >      
    </p>
@@ -13,7 +14,7 @@
         :min="0"
         :max="100"
         :step="1"
-        :bar-height="5">
+        :bar-height="2">
       </range>
     </p>
     <p class="range">
@@ -23,7 +24,7 @@
         :min="0"
         :max="100"
         :step="1"
-        :bar-height="5">
+        :bar-height="2">
       </range>
     </p>
        <p class="range">
@@ -33,7 +34,7 @@
         :min="0"
         :max="100"
         :step="1"
-        :bar-height="5">
+        :bar-height="2">
       </range>
     </p>
      <p class="range">
@@ -43,7 +44,7 @@
         :min="0"
         :max="360"
         :step="1"
-        :bar-height="5">
+        :bar-height="2">
       </range>
     </p>
     <p class="operation">
@@ -54,7 +55,7 @@
     </p>
 
     <crop
-      style="width:100%;height:560px;background-color: #f1f3f5;"
+      style="width:100%;height:300px;background-color: #f1f3f5;"
       v-model="crop"
       :position="option"
       :textWatermark = "textWatermark"
@@ -63,7 +64,7 @@
       :color=color
       :shape=shape
     >
-          <!-- defaultImgUrl = "http://img.zcool.cn/community/01bc0f59c9a9b0a8012053f85f066c.jpg" -->
+          <!-- defaultImgUrl = "http:\/\/img.zcool.cn/community/01bc0f59c9a9b0a8012053f85f066c.jpg" -->
     <!-- :imageWatermark = "require('./assets/logo.png')" -->
       <template slot="placeholder">
         <img src="https://ss1.bdstatic.com/70cFvXSh_Q1YnxGkpoWK1HF6hhy/it/u=1057851374,249752393&fm=26&gp=0.jpg" style="width:20%" />
@@ -74,21 +75,29 @@
       </template> -->
 
      </crop>
-    <div style="text-align:center" v-if="cropAction">
+    <!-- <div style="text-align:center" v-if="cropAction">
           <p>长按保存图片</p>
           <img v-if="cropAction" :src="imageData" alt="" style="width:70%">
-    </div>
+    </div> -->
+
+      <v-dialog  :visible.sync= "cropAction">
+            <img :src="imageData" alt="小程序码">
+            <p slot="desc">
+                <span>长按保存图片哦~</span>
+            </p>
+        </v-dialog>
   </div>
 </template>
 
 <script>
 import range from './Range'
+import dialog from './signDialog'
 export default {
   name: 'app',
   data() {
     return {
         option: [50, 50, 2, 0],
-        color:'',
+        color:'#f60',
         imgWatermark: '', // require('./assets/logo.png')
         textWatermark: '板蓝根出品，必属精品',
         crop:{},
@@ -99,7 +108,8 @@ export default {
     }
   },
   components: {
-      range
+    range,
+    'v-dialog': dialog
   },
   created(){
     if(!this.isMobile()){
@@ -116,7 +126,10 @@ export default {
     async getImageData() {
         const imageData = await this.crop.getImage('Base64', 'image/png', 2)
         this.imageData = imageData
-        this.cropAction = true
+        if (this.imageData) {
+          this.cropAction = true
+        }
+        
     }
   }
 }
@@ -133,6 +146,7 @@ export default {
     margin: 0;
   }
   #app {
+    font-size: 10px;
     font-family: 'Avenir', Helvetica, Arial, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -175,8 +189,8 @@ export default {
     -ms-touch-action: manipulation;
     touch-action: manipulation;
     height: 32px;
-    padding: 0 15px;
-    font-size: 14px;
+    padding: 0 8px;
+    font-size: 12px;
     color: rgba(0,0,0,0.65);
     background-color: #fff;
     border-color: #1890ff;
@@ -185,17 +199,17 @@ export default {
     -webkit-box-shadow: 0 2px 0 rgba(0,0,0,0.045);
     box-shadow: 0 2px 0 rgba(0,0,0,0.045);
     line-height: 1.499;
-    margin: 20px;
+    margin: 10px;
   }
   .operation .operationButton {
-    height: 40px;
-    padding: 0 25px;
-    font-size: 20px;
+    height: 30px;
+    padding: 0 12px;
+    font-size: 15px;
     /* line-height: 42px; */
   }
   .range {
     display: flex;
-    padding: 10px 10%
+    padding: 8px 5%
 
   }
   .range> span {
@@ -218,11 +232,11 @@ export default {
     color: #606266;
     display: inline-block;
     font-size: inherit;
-    height: 40px;
-    line-height: 40px;
+    height: 30px;
+    line-height: 30px;
     outline: none;
-    padding: 0 15px;
+    padding: 0 12px;
     transition: border-color 0.2s cubic-bezier(0.645, 0.045, 0.355, 1);
-    margin-bottom: 20px;
+    margin-bottom: 10px;
   }
 </style>
