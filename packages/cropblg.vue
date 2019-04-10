@@ -176,7 +176,7 @@
                                 ctx.moveTo((image.x + element.x), (image.y + element.y))
                             }
                             // ctx.lineTo((image.x + element.x) * this.scale, (image.y + element.y) * this.scale)
-                            // ctx.lineTo((image.x + element.x), (image.y + element.y))
+                            ctx.lineTo((image.x + element.x), (image.y + element.y))
                         })
                         ctx.stroke()
                     })
@@ -532,6 +532,10 @@
             // https://blog.csdn.net/qq_42014697/article/details/80728463  两指缩放
             handleEnd(){
                 if (this.drawAction && this.pointLine.length > 0) {
+                    this.drawPoint.x = this.drawPoint.x - this.image.x
+                    this.drawPoint.y = this.drawPoint.y - this.image.y
+                    // drawPoint.x = drawPoint.x - image.x
+                    // drawPoint.y = drawPoint.y - image.y
                     this.pointLine.push(this.drawPoint)
                     this.pointList.push(this.pointLine)
                     this.pointLine = []
