@@ -111,6 +111,8 @@
                         width: currentW  / 2,
                         height: currentH / 2
                     }
+
+                    const interval = 8
                     this.touchBar = {
                         x: width - 30 - 7,
                         y: 10,
@@ -118,9 +120,15 @@
                         height: 30
                     }
                     // width  画布宽度
-                    this.revokeBar = {
+                    this.paintBrush = {
                         x: width - 30 - 7,
-                        y: 40,
+                        y: 10 + ( 30 + interval),
+                        width: 30,
+                        height: 30
+                    }
+                     this.revokeBar = {
+                        x: width - 30 - 7,
+                        y: 10 + (30  + interval ) * 2,
                         width: 30,
                         height: 30
                     }
@@ -139,7 +147,9 @@
                 if (!this.averageColor) {
                         this.averageColor = this.getImageColor(this.ctx.getImageData(this.corePoint.x - 25,  this.corePoint.y - 25, 50, 50).data)
                 }
-                if (shape === 'arc') {
+                if ( shape === 'imgage') {
+                    
+                } else if (shape === 'arc') {
                     this.fillArcCropper()
                 } else {
                     this.updatePoint()
@@ -148,111 +158,93 @@
                 //  console.time('drawTouchBar')
                 if (this.angle) {
                     this.drawTouchBar(this.touchBar)
-                    this.drawTouchBar(this.revokeBar)
+                    this.drawPaintBrush(this.paintBrush)
+                    this.drawRevokeBar(this.revokeBar)
                 }
                 // 写的 线
-                this.drawPointFn()
+                this.drawPointFn(this.ctx)
                 // console.timeEnd('drawTouchBar')
                 // this.preview()
             },
-            drawPointFn(){
+            drawPointFn(ctx, quality = null,cropper = this.image){
                 const pointList = this.pointList
-                const ctx = this.ctx
                 const image = this.image
-                // ctx.isPointInPath(pointLocation.x, pointLocation.y)
                 if (pointList.length > 0) {
-                    pointList.forEach(el=>{
-                        // 没一端的 颜色和  出细  也要记录
-                        const scale = this.scale / el[0].scale
+                    pointList.forEach(el => {
+                        const scale = this.scale / el.scale
+                        ctx.lineWidth = this.limit(el.lineWidth * scale, 1, 5)
+                        ctx.strokeStyle = el.color
+                        ctx.lineCap = 'round'
                         ctx.beginPath()
-                        el.forEach((element,i)=>{
+                        el.pointLine.forEach((element,i)=>{
                             if (i === 0) {
-                                ctx.lineWidth = 5
-                                ctx.strokeStyle = "#f60"
-                                ctx.lineCap = 'round'
                                 // 要相对于图片的位置 才是对的  不能相对于 画布
-                            //     drawPoint.x = drawPoint.x - image.x
-                            //     drawPoint.y = drawPoint.y - image.y
-                            //    ctx.moveTo((image.x + element.x) * this.scale, (image.y + element.y) * this.scale)
-                                ctx.moveTo((image.x + element.x * scale), (image.y + element.y * scale))
+                                if (quality) {
+                                    console.log(element)
+                                    ctx.moveTo((image.x + (element.x * scale) - cropper.x)* quality , (image.y + (element.y * scale) - cropper.y) * quality)
+                                } else {
+                                    ctx.moveTo((image.x + element.x * scale) , (image.y + element.y * scale))
+                                }
                             }
-                            // ctx.lineTo((image.x + element.x) * this.scale, (image.y + element.y) * this.scale)
-                            ctx.lineTo((image.x + element.x * scale), (image.y + element.y * scale))
+                            if (quality) {
+                                ctx.lineTo((image.x + (element.x * scale) - cropper.x) * quality, (image.y + (element.y * scale) - cropper.y) * quality)
+                            } else {
+                                ctx.lineTo((image.x + element.x * scale), (image.y + element.y * scale))
+                            }
                         })
                         ctx.stroke()
                     })
                 }
                 //  ctx.lineWidth = 5
             },
-            drawController(touchBar) {
+            drawPaintBrush(touchBar) {
+                //   this.revokeBar = {
+                //         x: width - 30 - 7,
+                //         y: 40,
+                //         width: 30,
+                //         height: 30
+                //     }
+                // 怎么把 宽高用起来
+                const {x, y, width} = touchBar 
                 const ctx = this.ctx,
                 // touchBar = touchBar,
-                color = this.color || this.averageColor,
-                x = touchBar.x + touchBar.width * 0.6,
-                y =  touchBar.y + touchBar.height * 0.64,
-                r = touchBar.width * 0.41,
-                alpha = 6,
-                h1 = touchBar.width * 0.1,
-                h2 =  touchBar.width * 0.18
+                color = this.color || this.averageColor
                 ctx.lineWidth = 2
-                // ctx.fillStyle = '#000';
-                // ctx.fillRect(touchBar.x, touchBar.y, touchBar.width, touchBar.height)
-                ctx.fillStyle = color
-                ctx.fillRect(x - touchBar.width / 6, y - touchBar.height / 6, touchBar.width * 0.43, touchBar.height * 0.43)
-                ctx.strokeStyle = color
                 ctx.beginPath()
-                ctx.arc(x, y, r, Math.PI/180 * 180, -Math.PI/2 + alpha, false)
-                ctx.stroke()
-                if(alpha < 2*Math.PI) {
-                    const x1 = x + (r - h1) * Math.sin(alpha),
-                    y1 = y - (r - h1) * Math.cos(alpha),
-                    x2 = x + (r + h1) * Math.sin(alpha),
-                    y2 = y - (r + h1) * Math.cos(alpha),
-                    x0 = (x1 + x2) / 2 + h2 * Math.sin(alpha + Math.PI/2),
-                    y0 = (y1 + y2) / 2 - h2 * Math.cos(alpha + Math.PI/2)
-                    ctx.beginPath()
-                    ctx.moveTo(x0, y0)
-                    ctx.lineTo(x1, y1)
-                    ctx.lineTo(x2, y2)
-                    ctx.fill()
-                }
+                ctx.moveTo(x + 20, y + 5)
+                ctx.lineTo(x + 24, y +  9)
+                ctx.lineTo(x + 12, y + 21)
+                ctx.lineTo(x + 7, y + 22)
+                ctx.lineTo(x + 8, y + 17)
+                ctx.lineTo(x + 21, y + 5)
+                // ctx.stroke()
+                ctx.moveTo(x + 5, y + 26)
+                ctx.lineTo(x + 25, y + 26)
+                 ctx.stroke()
             },
             drawRevokeBar(touchBar) {
+                const {x, y, width} = touchBar
                 const ctx = this.ctx,
                 // touchBar = touchBar,
-                color = this.color || this.averageColor,
-                x = touchBar.x + touchBar.width * 0.6,
-                y =  touchBar.y + touchBar.height * 0.64,
-                r = touchBar.width * 0.41,
-                alpha = 6,
-                h1 = touchBar.width * 0.1,
-                h2 =  touchBar.width * 0.18
+                color = this.color || this.averageColor
                 ctx.lineWidth = 2
-                // ctx.fillStyle = '#000';
-                // ctx.fillRect(touchBar.x, touchBar.y, touchBar.width, touchBar.height)
-                ctx.fillStyle = color
-                ctx.fillRect(x - touchBar.width / 6, y - touchBar.height / 6, touchBar.width * 0.43, touchBar.height * 0.43)
-                ctx.strokeStyle = color
                 ctx.beginPath()
-                ctx.arc(x, y, r, Math.PI/180 * 180, -Math.PI/2 + alpha, false)
+                ctx.moveTo(x + 16, y + 11)
+                ctx.lineTo(x + 16, y +  5)
+                ctx.lineTo(x + 5, y + 15)
+
+                ctx.lineTo(x + 16, y + 25)
+                ctx.lineTo(x + 16, y + 19)
                 ctx.stroke()
-                if(alpha < 2*Math.PI) {
-                    const x1 = x + (r - h1) * Math.sin(alpha),
-                    y1 = y - (r - h1) * Math.cos(alpha),
-                    x2 = x + (r + h1) * Math.sin(alpha),
-                    y2 = y - (r + h1) * Math.cos(alpha),
-                    x0 = (x1 + x2) / 2 + h2 * Math.sin(alpha + Math.PI/2),
-                    y0 = (y1 + y2) / 2 - h2 * Math.cos(alpha + Math.PI/2)
-                    ctx.beginPath()
-                    ctx.moveTo(x0, y0)
-                    ctx.lineTo(x1, y1)
-                    ctx.lineTo(x2, y2)
-                    ctx.fill()
-                }
+                ctx.beginPath()
+                ctx.arc(x + 15,  y + 23, 12, -Math.PI/2, Math.PI/180 * 11, false)
+                ctx.stroke()
+                ctx.beginPath()
+                ctx.arc(x + 15,  y + 36, 16, -Math.PI/2, -Math.PI/180 * 38, false)
+                ctx.stroke()
             },
             drawTouchBar(touchBar) {
                 const ctx = this.ctx,
-                // touchBar = touchBar,
                 color = this.color || this.averageColor,
                 x = touchBar.x + touchBar.width * 0.6,
                 y =  touchBar.y + touchBar.height * 0.64,
@@ -261,11 +253,10 @@
                 h1 = touchBar.width * 0.1,
                 h2 =  touchBar.width * 0.18
                 ctx.lineWidth = 1
-                // ctx.fillStyle = '#000';
-                // ctx.fillRect(touchBar.x, touchBar.y, touchBar.width, touchBar.height)
+                // 填充颜色
                 ctx.fillStyle = color
+                // strokeRect  fillRect
                 ctx.fillRect(x - touchBar.width / 6, y - touchBar.height / 6, touchBar.width * 0.43, touchBar.height * 0.43)
-                ctx.strokeStyle = color
                 ctx.beginPath()
                 ctx.arc(x, y, r, Math.PI/180 * 180, -Math.PI/2 + alpha, false)
                 ctx.stroke()
@@ -535,9 +526,15 @@
                 if (this.drawAction && this.pointLine.length > 0) {
                     this.drawPoint.x = this.drawPoint.x - this.image.x
                     this.drawPoint.y = this.drawPoint.y - this.image.y
-                    this.drawPoint.scale = this.scale
                     this.pointLine.push(this.drawPoint)
-                    this.pointList.push(this.pointLine)
+                    // 点的 宽度
+                    const pointObj = {
+                        pointLine: this.pointLine,
+                        scale: this.scale,
+                        lineWidth: 3,
+                        color: '#f60'
+                    }
+                    this.pointList.push(pointObj)
                     this.pointLine = []
                 }
                 
@@ -552,7 +549,7 @@
                 }
                 this.drawPoint = this.getCoordinateByEvent(e)
                 this.startPoint = this.getPointByCoordinate(this.drawPoint)
-               
+                // ---
                 if (this.drawAction) {
                     this.pointLine = []
                     this.ctx.beginPath()
@@ -572,7 +569,7 @@
                     // k = k < 1 ? k / 10 : k * 10
                     k = k < 1 ? 1 / (1 + k / 80) : 1 + Math.abs(k) / 160
                     k = k * scale;
-                    this.scale = this.limit(k, 0.02, 4)
+                    this.scale = this.limit(k, 0.02, 1.07)
                     const width = image.clientWidth * this.scale,
                     height = image.clientHeight * this.scale
                     this.image.x += (image.width - width) / 2
@@ -590,7 +587,7 @@
                     const current = this.getCoordinateByEvent(e)
                     const ctx = this.ctx
                     ctx.lineTo(current.x, current.y)
-                    ctx.lineWidth = 5
+                    ctx.lineWidth = 3
                     ctx.strokeStyle = "#f60"
                     ctx.lineCap = 'round'
                     ctx.stroke()
@@ -600,7 +597,6 @@
                     // 图片  坐上角 为00
                     drawPoint.x = drawPoint.x - image.x
                     drawPoint.y = drawPoint.y - image.y
-                    drawPoint.scale = this.scale
                     this.pointLine.push(drawPoint)
                     // this.pointLine.push(drawPoint)
                     this.drawPoint = current
@@ -630,29 +626,22 @@
             },
             getPointByCoordinate({x, y}) {
                 const image = this.image,
-                touchBar = this.touchBar,
                 shape = this.shape || 'rect'
                 let t = {}
                 let index = 0
                 //  旋转
-                if (this.checkRegion(x, y, touchBar)) {
-                    // t.type = 'draw'
-                    // 接下来 是draw 动作
-                    //  再次进来  保存 起始点 坐标
+                if (this.checkRegion(x, y, this.paintBrush)) {
                     if (this.drawAction) {
                         this.drawAction = false
-                        alert('取消划线')
-                        console.log(this.pointList)
-                        alert(this.pointList.length)
+                        // alert('取消划线')
+                        // alert(this.scale)
+                        // console.log(this.pointList)
+                        // alert(this.pointList.length)
                     } else {
                         this.drawAction = true
-                        alert('开始划线')
+                        // alert('开始划线')
                     }
                     return
-                    // --------------------------------------------------------------------------
-                    // this.rotateAngle =  (this.rotateAngle + this.angle ) % 360
-                    // this.draw()
-                    // return
                 }else if (this.checkRegion(x, y, this.revokeBar)) {
                     // t.type = 'draw'
                     // 接下来 是draw 动作
@@ -660,15 +649,13 @@
                     this.pointList.pop()
                     this.draw()
                     return
-                    // --------------------------------------------------------------------------
-                    // this.rotateAngle =  (this.rotateAngle + this.angle ) % 360
-                    // this.draw()
-                    // return
+                } else  if (this.checkRegion(x, y, this.touchBar)) {
+                    this.rotateAngle =  (this.rotateAngle + this.angle ) % 360
+                    this.draw()
+                    return
                 } else if(this.drawAction){
                     return
-                }
-                // 圆移动
-                else if (shape === 'arc' && this.checkArc(x, y)) {
+                } else if (shape === 'arc' && this.checkArc(x, y)) {
                     t.type = 'handleArcMove'
                 }
                 // 四个角移动         
@@ -724,15 +711,20 @@
             },
             getImage(type='Base64', mimeType='image/jpeg', quality=1) {
                 if (this.noImage) return
+                const shape = this.shape || 'rect'
+                let cropper = this.cropper
+                if (shape == 'imgage') {
+                    cropper = this.image
+                } else if (shape === 'arc') {
+                    // 圆形必须 2倍才好
+                    cropper = {
+                        x: this.arc.x - this.arc.r,
+                        y: this.arc.y - this.arc.r,
+                        width:  this.arc.r * 2,
+                        height:  this.arc.r * 2
+                    }
+                }
                 const image = this.image,
-                shape = this.shape || 'rect',
-                // cropper = this.cropper,
-                cropper = shape === 'arc' ? {
-                    x: this.arc.x - this.arc.r,
-                    y: this.arc.y - this.arc.r,
-                    width:  this.arc.r * 2 ,
-                    height:  this.arc.r * 2
-                } : this.cropper,
                 pixelRatio = this.pixelRatio,
                 types = {
                     Base64(canvas, mimeType, resolve) {
@@ -760,43 +752,23 @@
                 cCtx.clearRect(0, 0, w, h)
                 const rotateAngle = this.rotateAngle
                 if (shape === 'arc') {
-                    const radius = cropper.width
+                    const radius = w / 2
                     cCtx.beginPath()
-                    cCtx.lineWidth = 10
-                    cCtx.arc(radius, radius, radius, 0, Math.PI * 2, false)
+                    // 圆心是当前正方形的(画布) 中间
+                    cCtx.arc(radius , radius, radius, 0, Math.PI * 2, false)
                     cCtx.clip()
                 }
+                //  圆形 只有 2 倍 缩放 数据是正确的
+                // 旋转图片  这个是  主图旋转  /也是canvas 上 img
                 this.canvasRotate('img', cCtx, image.element,
                     rotateAngle,
                     (image.x - cropper.x)  * quality,
                     (image.y - cropper.y)  * quality,
-                    image.width* quality,
-                    image.height* quality
+                    image.width * quality,
+                    image.height * quality
                 )
-                const pointList = this.pointList
-                if (pointList.length > 0) {
-                    pointList.forEach(el=>{
-                        cCtx.beginPath()
-                        el.forEach((element,i)=>{
-                            if (i === 0) {
-                                cCtx.lineWidth = 10
-                                cCtx.strokeStyle = "#f60"
-                                cCtx.lineCap = 'round'
-                               cCtx.moveTo((element.x - cropper.x) * quality, (element.y - cropper.y) * quality)   
-                            }
-                            cCtx.lineTo((element.x -  cropper.x) * quality, (element.y - cropper.y) * quality)
-                        })
-                        cCtx.stroke()
-                    })
-                }
-                // -------------
-                // cCtx.drawImage(
-                //     image.element,
-                //     (image.x - cropper.x)  * quality , //  是负数
-                //     (image.y - cropper.y)  * quality, // 负数
-                //     image.width * quality ,
-                //     image.height * quality
-                // )
+                // 在整个图片上 写写画画  再要框了--- 就是说框是---img
+                this.drawPointFn(this.cCtx, quality, cropper)
                 return new Promise((resolve, reject) => {
                     if(!types[type]) {
                         reject('type = Blob || Base64')
@@ -818,7 +790,7 @@
                         return
                     }             
                     if (this.textWatermark) {
-                        const height = this.limit(12 * size, 12, 100)
+                        const height = this.limit(size, 12, 100)
                         cCtx.font = height + 'px Georgia'
                         const text = this.textWatermark,
                         width = cCtx.measureText(text).width,
