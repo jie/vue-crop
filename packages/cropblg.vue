@@ -65,6 +65,7 @@
                         k = 1 // contain 时的缩放比
                     // contain 图片
                     if (clientW > width) {
+                        // alert('12123')
                         currentW = width
                         k = currentW / clientW
                         currentH = k * clientH
@@ -90,8 +91,8 @@
                     // 针对小图片
                     this.image = {
                         element: img,
-                        width: currentW,
-                        height: currentH,
+                        width: currentW, // 显示宽度
+                        height: currentH, // 真是 宽度
                         x: (width - currentW) / 2,
                         y: (height - currentH) / 2,
                         clientWidth: clientW,
@@ -144,6 +145,7 @@
                 //  处理出片
                 this.fillImage()
                 // console.timeEnd('fillImage')
+                this.drawPointFn(this.ctx)
                 if (!this.averageColor) {
                         this.averageColor = this.getImageColor(this.ctx.getImageData(this.corePoint.x - 25,  this.corePoint.y - 25, 50, 50).data)
                 }
@@ -162,13 +164,19 @@
                     this.drawRevokeBar(this.revokeBar)
                 }
                 // 写的 线
-                this.drawPointFn(this.ctx)
                 // console.timeEnd('drawTouchBar')
                 // this.preview()
             },
-            drawPointFn(ctx, quality = null,cropper = this.image){
+            rotatePoint({pageX,pageY},r,angle){
+                angle = Math.PI / 180 * angle
+                return { 
+                    x: pageX + Math.cos(angle) * r,
+                    y: pageY + Math.sin(angle) * r
+                }
+            },
+            drawPointFn(ctx, quality = null,cropper = this.image,image = this.image){
                 const pointList = this.pointList
-                const image = this.image
+                // const image = this.image
                 if (pointList.length > 0) {
                     pointList.forEach(el => {
                         const scale = this.scale / el.scale
@@ -180,7 +188,7 @@
                             if (i === 0) {
                                 // 要相对于图片的位置 才是对的  不能相对于 画布
                                 if (quality) {
-                                    console.log(element)
+                                    // console.log(element)
                                     ctx.moveTo((image.x + (element.x * scale) - cropper.x)* quality , (image.y + (element.y * scale) - cropper.y) * quality)
                                 } else {
                                     ctx.moveTo((image.x + element.x * scale) , (image.y + element.y * scale))
@@ -210,38 +218,48 @@
                 // touchBar = touchBar,
                 color = this.color || this.averageColor
                 ctx.lineWidth = 2
+                ctx.lineCap = 'round'
                 ctx.beginPath()
                 ctx.moveTo(x + 20, y + 5)
                 ctx.lineTo(x + 24, y +  9)
                 ctx.lineTo(x + 12, y + 21)
                 ctx.lineTo(x + 7, y + 22)
                 ctx.lineTo(x + 8, y + 17)
-                ctx.lineTo(x + 21, y + 5)
+                // ctx.lineTo(x + 20, y + 5)
+                ctx.closePath()
+                if (this.drawAction) {
+                    ctx.fillStyle = color
+                    ctx.fill();
+                }
                 // ctx.stroke()
                 ctx.moveTo(x + 5, y + 26)
                 ctx.lineTo(x + 25, y + 26)
                  ctx.stroke()
             },
             drawRevokeBar(touchBar) {
-                const {x, y, width} = touchBar
+                const {x, y} = touchBar
+                //  const {x, y, width} = touchBar   //  用宽 算个比例
                 const ctx = this.ctx,
                 // touchBar = touchBar,
                 color = this.color || this.averageColor
                 ctx.lineWidth = 2
+                ctx.lineCap = 'round'
                 ctx.beginPath()
-                ctx.moveTo(x + 16, y + 11)
-                ctx.lineTo(x + 16, y +  5)
-                ctx.lineTo(x + 5, y + 15)
+                ctx.moveTo(x + 15, y + 12)
+                ctx.lineTo(x + 15, y + 8)
+                ctx.lineTo(x + 7, y + 15)
 
-                ctx.lineTo(x + 16, y + 25)
-                ctx.lineTo(x + 16, y + 19)
+                ctx.lineTo(x + 15, y + 22)
+                ctx.lineTo(x + 15, y + 18)
                 ctx.stroke()
+                ctx.fillStyle = color
+                ctx.fill()
                 ctx.beginPath()
-                ctx.arc(x + 15,  y + 23, 12, -Math.PI/2, Math.PI/180 * 11, false)
+                ctx.arc(x + 15,  y + 24, 12, -Math.PI/2, -Math.PI/180 * 18, false)
+                ctx.arc(x + 15,  y + 35, 17,-Math.PI/180 * 45, -Math.PI/2, true)
                 ctx.stroke()
-                ctx.beginPath()
-                ctx.arc(x + 15,  y + 36, 16, -Math.PI/2, -Math.PI/180 * 38, false)
-                ctx.stroke()
+                ctx.fillStyle = color
+                ctx.fill()
             },
             drawTouchBar(touchBar) {
                 const ctx = this.ctx,
@@ -275,7 +293,7 @@
                 }
             },
             fillImage() {
-                const image = this.image;
+                const image = this.image
                 const ctx = this.ctx
                 const rotateAngle = this.rotateAngle
                 this.canvasRotate('img', ctx, image.element, rotateAngle, image.x, image.y, image.width, image.height)
@@ -523,6 +541,17 @@
             },
             // https://blog.csdn.net/qq_42014697/article/details/80728463  两指缩放
             handleEnd(){
+                if (this.changeDrawAction) {
+                    if (this.drawAction) {
+                        this.drawAction = false
+                        this.draw()
+                    } else {
+                        this.drawAction = true
+                        this.draw()
+                    }
+                    this.changeDrawAction = false
+                    return
+                }
                 if (this.drawAction && this.pointLine.length > 0) {
                     this.drawPoint.x = this.drawPoint.x - this.image.x
                     this.drawPoint.y = this.drawPoint.y - this.image.y
@@ -532,7 +561,8 @@
                         pointLine: this.pointLine,
                         scale: this.scale,
                         lineWidth: 3,
-                        color: '#f60'
+                        color: this.color || this.averageColor,
+                        rotateAngle : this.rotateAngle
                     }
                     this.pointList.push(pointObj)
                     this.pointLine = []
@@ -542,14 +572,16 @@
             handleStart(e) {
                 // alert(1)
                 e.preventDefault()
+                // 双指
                 if (e.touches.length > 1) {
                     this.startTouches = e.touches
                     this.startPoint.type = null
                     return;
                 }
+                // 单指  起点
                 this.drawPoint = this.getCoordinateByEvent(e)
                 this.startPoint = this.getPointByCoordinate(this.drawPoint)
-                // ---
+                // --  画画
                 if (this.drawAction) {
                     this.pointLine = []
                     this.ctx.beginPath()
@@ -578,7 +610,8 @@
                     this.image.height = height
                     this.draw()
                     return
-                } else if (this.drawAction) {
+                }
+                if (this.drawAction) {
                     // 划线
                     // 先实现划线
                     //  画 相对于 画布  // 存 相对于 画布
@@ -603,7 +636,7 @@
                     return
                 }
                 // 这是干啥的--画=>图片和 线
-                const type = this.startPoint.type
+                const type = this.startPoint ? this.startPoint.type : null
                 if (type && this.getCoordinateByEvent(e)) {
                     this[type](this.getCoordinateByEvent(e))
                 }
@@ -631,16 +664,7 @@
                 let index = 0
                 //  旋转
                 if (this.checkRegion(x, y, this.paintBrush)) {
-                    if (this.drawAction) {
-                        this.drawAction = false
-                        // alert('取消划线')
-                        // alert(this.scale)
-                        // console.log(this.pointList)
-                        // alert(this.pointList.length)
-                    } else {
-                        this.drawAction = true
-                        // alert('开始划线')
-                    }
+                    this.changeDrawAction = true
                     return
                 }else if (this.checkRegion(x, y, this.revokeBar)) {
                     // t.type = 'draw'
@@ -649,7 +673,7 @@
                     this.pointList.pop()
                     this.draw()
                     return
-                } else  if (this.checkRegion(x, y, this.touchBar)) {
+                } else if (this.checkRegion(x, y, this.touchBar)) {
                     this.rotateAngle =  (this.rotateAngle + this.angle ) % 360
                     this.draw()
                     return
@@ -668,7 +692,7 @@
                     this.index = index
                 }
                 // 四根线移动
-                else if (shape !== 'arc' && this.lines.some((line,i) => {
+                else if (shape === 'rect' && this.lines.some((line,i) => {
                     index = i
                     return this.checkRegion(x,y,line)
                 }) 
@@ -691,10 +715,11 @@
                 else if (this.checkRegion(x,y,image)) {
                     t.offsetX = x - image.x
                     t.offsetY = y - image.y
-                    t.type = 'handleImageMove'
+                    t.type = 'handleImageMove' 
                 }
                 return t
             },
+            // 求两点之间的 距离
             getDistance(p1, p2) {
                 const x = p2.pageX - p1.pageX,
                     y = p2.pageY - p1.pageY
@@ -823,8 +848,12 @@
                         width,
                         height
                     )
-                } else {
+                } else if (type === 'text') {
                     ctx.fillText(target, -halfWidth , -halfHeight)
+                } else if (type === 'line') {
+                    //  图片的位置 已经变了  -- 你记得还是他原来  的  相对于他原来的  位置
+                    // 反推  就是旋转角度不对而已
+                    // this.drawPointFn(ctx, '' , ''  ,{x: -halfWidth, y:  -halfHeight})
                 }
                 ctx.restore()
             },
